@@ -10,6 +10,9 @@ export const zh = {
   'dialog.cancel': '取消',
   'dialog.close': '关闭',
   'dialog.errorRunning': '该对话正在运行中，请先停止后再删除。',
+  'dialog.errorInProgress': '该对话正在删除中，请勿重复操作。',
+  'dialog.errorInvalidId': '无效的会话 ID，无法删除。',
+  'dialog.errorTimeout': '删除请求超时，请检查服务状态后重试。',
   'dialog.errorGeneric': '删除对话失败，请重试。',
 } as const
 
@@ -23,6 +26,9 @@ export const en = {
   'dialog.cancel': 'Cancel',
   'dialog.close': 'Close',
   'dialog.errorRunning': 'This conversation is currently running. Please stop it first.',
+  'dialog.errorInProgress': 'Deletion is already in progress for this conversation.',
+  'dialog.errorInvalidId': 'Invalid session ID. Unable to delete.',
+  'dialog.errorTimeout': 'Delete request timed out. Please try again.',
   'dialog.errorGeneric': 'Failed to delete conversation. Please try again.',
 } as const
 

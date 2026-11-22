@@ -28,10 +28,19 @@ npm run build
 
 本插件已通过 `package.json` 中的 `dsh.bundle` 声明自动挂载 `cordis.patch.yml`：
 
-1. 将本地插件安装到 DSH 的 `desktop` profile：
+1. 将插件安装到 DSH 的 `desktop` profile（从 GitHub 仓库或本地目录）：
 
 ```powershell
-& "C:\Users\Jenision\AppData\Local\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "C:\Users\Jenision\.gemini\antigravity\scratch\dsh-delete-session"
+# 从 GitHub 安装
+dsh plugin --profile desktop add github:Jenision/dsh-delete-session
+
+# 或从本地目录安装
+dsh plugin --profile desktop add "<path-to-dsh-delete-session>"
 ```
 
 2. 重启 DeepSeek Harness 即可生效。
+
+## 常见问题
+
+- **Windows 安装时提示 `ERR_PNPM_EPERM`（没有写入权限，无法安装）**：
+  通常是由于 DeepSeek Harness 正在运行并占用了 `profiles\desktop\node_modules` 中的文件，或上一次安装留下了锁文件/被安全软件拦截。请**先完全退出 DeepSeek Harness** 后再通过 CLI 安装或重试；若仍失败，可删除 `%USERPROFILE%\.dsh\profiles\desktop\node_modules\.pnpm` 下的临时残留目录后重新安装。

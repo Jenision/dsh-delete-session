@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { PropsHooks, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { SESSION_DELETE_ROUTE } from '../routes.ts'
 import type { NS } from './locales.ts'
+
+const DELETE_TIMEOUT_MS = 15_000
 
 export interface DeleteRequest {
   readonly sessionId: SessionId
@@ -56,6 +58,16 @@ function DeleteConfirmForm({
 }) {
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const mountedRef = useRef(true)
+  const abortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      abortRef.current?.abort()
+    }
+  }, [])
 
   const close = () => {
     if (deleting) return
@@ -63,13 +75,20 @@ function DeleteConfirmForm({
   }
 
   const confirm = async () => {
+    if (deleting) return
     setDeleting(true)
     setError(null)
+
+    const controller = new AbortController()
+    abortRef.current = controller
+    const timeoutId = setTimeout(() => controller.abort('timeout'), DELETE_TIMEOUT_MS)
+
     try {
       const response = await fetch(SESSION_DELETE_ROUTE, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ sessionId: request.sessionId }),
+        signal: controller.signal,
       })
       if (!response.ok) {
         let message = t('dialog.errorGeneric')
@@ -77,26 +96,48 @@ function DeleteConfirmForm({
           const data = (await response.json()) as { code?: string; error?: string }
           if (data?.code === 'SESSION_RUNNING') {
             message = t('dialog.errorRunning')
+          } else if (data?.code === 'DELETE_IN_PROGRESS') {
+            message = t('dialog.errorInProgress')
+          } else if (data?.code === 'INVALID_SESSION_ID') {
+            message = t('dialog.errorInvalidId')
           } else if (data?.error) {
             message = data.error
           }
         } catch {
           // Ignore non-JSON error body.
         }
-        setError(message)
-        setDeleting(false)
+        if (mountedRef.current) {
+          setError(message)
+          setDeleting(false)
+        }
         return
       }
-      setDeleting(false)
-      onDeleted?.(request.sessionId)
-      dismiss()
+      if (mountedRef.current) {
+        setDeleting(false)
+        onDeleted?.(request.sessionId)
+        dismiss()
+      }
     } catch (err: unknown) {
+      if (!mountedRef.current) return
       setDeleting(false)
-      setError(err instanceof Error ? err.message : t('dialog.errorGeneric'))
+      if (controller.signal.aborted && controller.signal.reason === 'timeout') {
+        setError(t('dialog.errorTimeout'))
+      } else {
+        setError(err instanceof Error ? err.message : t('dialog.errorGeneric'))
+      }
+    } finally {
+      clearTimeout(timeoutId)
+      if (abortRef.current === controller) {
+        abortRef.current = null
+      }
     }
   }
 
   const title = request.displayTitle || String(request.sessionId)
+  const dangerButtonStyle = {
+    color: 'var(--color-danger, #dc2626)',
+    '--dsh-button-outline-color': 'var(--color-danger, #dc2626)',
+  } as CSSProperties
 
   return (
     <Modal
@@ -113,10 +154,7 @@ function DeleteConfirmForm({
           <Button
             variant="outline"
             disabled={deleting}
-            style={{
-              color: 'var(--color-danger, #dc2626)',
-              borderColor: 'var(--color-danger, #dc2626)',
-            }}
+            style={dangerButtonStyle}
             onClick={() => { void confirm() }}
           >
             {deleting ? t('dialog.deleting') : t('dialog.confirm')}

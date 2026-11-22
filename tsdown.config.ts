@@ -1,6 +1,8 @@
 import { readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { defineConfig } from 'tsdown'
 
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { name: string }
+
 export default defineConfig([
   {
     entry: ['src/index.ts'],
@@ -20,7 +22,7 @@ export default defineConfig([
       const cjsFile = 'lib/client/index.cjs'
       const jsFile = 'lib/client/index.js'
       const body = readFileSync(cjsFile, 'utf8')
-      const wrapped = `window.__ModuleLoader__.load({id:"dsh-delete-session",factory:require=>{var module={exports:{}};var exports=module.exports;\n${body}\nreturn module.exports}});\n`
+      const wrapped = `window.__ModuleLoader__.load({id:${JSON.stringify(pkg.name)},factory:require=>{var module={exports:{}};var exports=module.exports;\n${body}\nreturn module.exports}});\n`
       writeFileSync(jsFile, wrapped, 'utf8')
       unlinkSync(cjsFile)
     },

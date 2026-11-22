@@ -28,10 +28,19 @@ npm run build
 
 This plugin declares `dsh.bundle` in `package.json`, so `cordis.patch.yml` is applied automatically:
 
-1. Install the local plugin into your `desktop` profile:
+1. Install the plugin into your `desktop` profile (from GitHub or a local directory):
 
 ```powershell
-& "C:\Users\Jenision\AppData\Local\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "C:\Users\Jenision\.gemini\antigravity\scratch\dsh-delete-session"
+# From GitHub
+dsh plugin --profile desktop add github:Jenision/dsh-delete-session
+
+# Or from a local directory
+dsh plugin --profile desktop add "<path-to-dsh-delete-session>"
 ```
 
 2. Restart DeepSeek Harness to activate the plugin.
+
+## Troubleshooting
+
+- **`ERR_PNPM_EPERM` (No write permission) during installation on Windows**:
+  This usually happens when DeepSeek Harness is still running and holding file locks inside `profiles\desktop\node_modules`, or when Windows Defender / a previous failed install locks temporary directories. **Quit DeepSeek Harness completely** and retry via the CLI (or remove leftover temporary folders under `%USERPROFILE%\.dsh\profiles\desktop\node_modules\.pnpm` before reinstalling).
